@@ -1,15 +1,48 @@
 
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: blog-ingress
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#     - host: srv2052563.hstgr.cloud
+#       http:
+#         paths:
+#           - path: /yahia
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: web
+#                 port:
+#                   number: 3000
+
+#     - host: srv2052563.hstgr.cloud
+#       http:
+#         paths:
+#           - path: /yahia/admin
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: admin
+#                 port:
+#                   number: 80
+
+
+
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: blog-ingress
+  namespace: yahia
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
-    - host: srv2052563.hstgr.cloud
+    - host: blog.yahia.195.35.2.222.nip.io
       http:
         paths:
-          - path: /yahia
+          - path: /
             pathType: Prefix
             backend:
               service:
@@ -17,10 +50,10 @@ spec:
                 port:
                   number: 3000
 
-    - host: srv2052563.hstgr.cloud
+    - host: admin.yahia.195.35.2.222.nip.io
       http:
         paths:
-          - path: /yahia/admin
+          - path: /
             pathType: Prefix
             backend:
               service:
