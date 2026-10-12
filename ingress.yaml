@@ -6,7 +6,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: https://srv2052563.hstgr.cloud/yahia/
+    - host: srv2052563.hstgr.cloud/yahia/
       http:
         paths:
           - path: /
