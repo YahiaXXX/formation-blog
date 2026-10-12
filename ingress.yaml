@@ -6,10 +6,10 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: srv2052563.hstgr.cloud/yahia/
+    - host: srv2052563.hstgr.cloud
       http:
         paths:
-          - path: /
+          - path: /yahia
             pathType: Prefix
             backend:
               service:
@@ -17,10 +17,10 @@ spec:
                 port:
                   number: 3000
 
-    - host: admin.example.com
+    - host: srv2052563.hstgr.cloud
       http:
         paths:
-          - path: /
+          - path: /yahia/admin
             pathType: Prefix
             backend:
               service:
