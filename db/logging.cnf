@@ -1,0 +1,12 @@
+[mysqld]
+# All MySQL logs go to files in /var/log/mysql (volume "mysql_logs"), NOT to the backend logs
+log_output=FILE
+log_error=/var/log/mysql/error.log
+log_error_verbosity=2
+slow_query_log=1
+slow_query_log_file=/var/log/mysql/slow.log
+long_query_time=1
+log_slow_admin_statements=1
+# General log records EVERY query: great for dev, disable in production (general_log=0)
+general_log=1
+general_log_file=/var/log/mysql/general.log

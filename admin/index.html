@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blog Admin</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f4f5f7; color: #1f2328; }
+      .wrap { max-width: 1000px; margin: 0 auto; padding: 1rem; }
+      header { display: flex; justify-content: space-between; align-items: center; padding: .8rem 1rem; background: #111827; color: #fff; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .75rem; margin: 1rem 0; }
+      .stat { background: #fff; border-radius: 8px; padding: .8rem; border: 1px solid #e5e7eb; }
+      .stat b { font-size: 1.6rem; display: block; }
+      .tabs { display: flex; gap: .5rem; margin-bottom: .75rem; }
+      .tabs button { background: #e5e7eb; color: #111; } .tabs button.on { background: #2563eb; color: #fff; }
+      table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+      th, td { text-align: left; padding: .6rem; border-bottom: 1px solid #eee; vertical-align: top; }
+      button { padding: .35rem .8rem; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+      button.ok { background: #059669; } button.no { background: #d97706; } button.del { background: #dc2626; }
+      input { width: 100%; padding: .6rem; margin: .3rem 0 .8rem; border: 1px solid #ccc; border-radius: 6px; }
+      .login { max-width: 360px; margin: 5rem auto; background: #fff; padding: 1.5rem; border-radius: 8px; }
+      .err { color: #b00020; } .muted { color: #6b7280; font-size: .85rem; }
+      pre { white-space: pre-wrap; margin: .5rem 0 0; font-family: inherit; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
