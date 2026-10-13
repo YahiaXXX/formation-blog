@@ -114,7 +114,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: yahia14/blog-backend:1.0.0
+          image: yahia14/blog-backend:2.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 4000
