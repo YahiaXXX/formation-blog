@@ -6,18 +6,7 @@
 # =====================================================================
 
 # ---- Secret: same values as your .env file (no quotes/spaces/$ in passwords)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: blog-secrets
-type: Opaque
-stringData:
-  MYSQL_ROOT_PASSWORD: "Root_ChangeMe_2026"
-  MYSQL_PASSWORD: "Db_ChangeMe_2026"
-  JWT_SECRET: "change-this-to-a-long-random-string-32chars-min"
-  ADMIN_EMAIL: "admin@example.com"
-  ADMIN_PASSWORD: "Admin_ChangeMe_2026"
----
+
 # ---- MySQL disk (like the mysql_data volume)
 # apiVersion: v1
 # kind: PersistentVolumeClaim
@@ -230,92 +219,278 @@ stringData:
 #     - { port: 80, targetPort: 80 }
 
 
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: blog-secrets
+# type: Opaque
+# stringData:
+#   MYSQL_ROOT_PASSWORD: "Root_ChangeMe_2026"
+#   MYSQL_PASSWORD: "Db_ChangeMe_2026"
+#   JWT_SECRET: "change-this-to-a-long-random-string-32chars-min"
+#   ADMIN_EMAIL: "admin@example.com"
+#   ADMIN_PASSWORD: "Admin_ChangeMe_2026"
+# ---
 
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: mysql-data
+# spec:
+#   accessModes: ["ReadWriteOnce"]
+#   resources:
+#     requests:
+#       storage: 5Gi
+# ---
+# # ---- 1) MYSQL pod
+# # Logs go to files in /var/log/mysql (separate from the backend logs), like your logging.cnf:
+# #   kubectl exec deploy/mysql -- tail -f /var/log/mysql/error.log
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: mysql
+# spec:
+#   replicas: 1
+#   strategy:
+#     type: Recreate              # never two MySQL pods on the same disk
+#   selector:
+#     matchLabels: { app: mysql }
+#   template:
+#     metadata:
+#       labels: { app: mysql }
+#       annotations:
+#         linkerd.io/inject: enabled
+#         config.linkerd.io/opaque-ports: "3306"   # MySQL is server-speaks-first: skip HTTP detection (3306 is already a Linkerd default)
+#     spec:
+#       containers:
+#         - name: mysql
+#           image: mysql:8.4
+#           args:
+#             - --skip-log-bin
+#             - --log-output=FILE
+#             - --log-error=/var/log/mysql/error.log
+#             - --log-error-verbosity=2
+#             - --slow-query-log=1
+#             - --slow-query-log-file=/var/log/mysql/slow.log
+#             - --long-query-time=1
+#             - --general-log=1
+#             - --general-log-file=/var/log/mysql/general.log
+#           env:
+#             - name: MYSQL_ROOT_PASSWORD
+#               valueFrom: { secretKeyRef: { name: blog-secrets, key: MYSQL_ROOT_PASSWORD } }
+#             - { name: MYSQL_DATABASE, value: blog }
+#             - { name: MYSQL_USER, value: blog_user }
+#             - name: MYSQL_PASSWORD
+#               valueFrom: { secretKeyRef: { name: blog-secrets, key: MYSQL_PASSWORD } }
+#           ports:
+#             - containerPort: 3306
+#           volumeMounts:
+#             - { name: data, mountPath: /var/lib/mysql }
+#             - { name: logs, mountPath: /var/log/mysql }
+#           resources:
+#             requests: { cpu: 100m, memory: 256Mi }
+#             limits: { cpu: "1", memory: 1Gi }
+#           readinessProbe:
+#             exec:
+#               command: ["bash", "-c", "mysqladmin ping -h127.0.0.1 -uroot -p\"$MYSQL_ROOT_PASSWORD\" --silent"]
+#             initialDelaySeconds: 20
+#             periodSeconds: 5
+#           livenessProbe:
+#             tcpSocket: { port: 3306 }
+#             initialDelaySeconds: 90
+#             periodSeconds: 10
+#             failureThreshold: 6
+#       volumes:
+#         - name: data
+#           persistentVolumeClaim: { claimName: mysql-data }
+#         - name: logs
+#           emptyDir: {}          # database logs (use a PVC here if you want them to survive restarts)
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: mysql                   # same name as in docker-compose (DB_HOST: mysql)
+# spec:
+#   selector: { app: mysql }
+#   ports:
+#     - { port: 3306, targetPort: 3306 }
+# ---
+# # ---- 2) BACKEND pod (Express)   logs: kubectl logs deploy/backend
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: backend
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels: { app: backend }
+#   template:
+#     metadata:
+#       labels: { app: backend }
+#       annotations:
+#         linkerd.io/inject: enabled
+#     spec:
+#       containers:
+#         - name: backend
+#           image: yahia14/blog-backend:2.0.0
+#           imagePullPolicy: Always
+#           ports:
+#             - containerPort: 4000
+#           env:
+#             - { name: PORT, value: "4000" }
+#             - { name: DB_HOST, value: mysql }
+#             - { name: DB_NAME, value: blog }
+#             - { name: DB_USER, value: blog_user }
+#             - name: DB_PASSWORD
+#               valueFrom: { secretKeyRef: { name: blog-secrets, key: MYSQL_PASSWORD } }
+#             - name: JWT_SECRET
+#               valueFrom: { secretKeyRef: { name: blog-secrets, key: JWT_SECRET } }
+#             - name: ADMIN_EMAIL
+#               valueFrom: { secretKeyRef: { name: blog-secrets, key: ADMIN_EMAIL } }
+#             - name: ADMIN_PASSWORD
+#               valueFrom: { secretKeyRef: { name: blog-secrets, key: ADMIN_PASSWORD } } 
+#           resources:
+#             requests: { cpu: 50m, memory: 96Mi }
+#             limits: { cpu: 500m, memory: 384Mi }
+#           # readinessProbe:
+#           #   httpGet: { path: /, port: 4000 }
+#           #   initialDelaySeconds: 5
+#           #   periodSeconds: 5
+#           # livenessProbe:
+#           #   httpGet: { path: /, port: 4000 }
+#           #   initialDelaySeconds: 30
+#           #   periodSeconds: 10
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: backend
+# spec:
+#   selector: { app: backend }
+#   ports:
+#     - { port: 4000, targetPort: 4000 }
+ 
+# ---
+# # ---- 3) WEB pod (Next.js, users)   open with NodePort: kubectl get svc web
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: web
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels: { app: web }
+#   template:
+#     metadata:
+#       labels: { app: web }
+#       annotations:
+#         linkerd.io/inject: enabled
+#     spec:
+#       containers:
+#         - name: web
+#           image: yahia14/blog-platform-web:1.0.0
+#           imagePullPolicy: Always
+#           ports:
+#             - containerPort: 3000
+#           env:
+#             - { name: API_URL, value: "http://backend:4000" }
+#             - { name: COOKIE_SECURE, value: "false" }
+#           resources:
+#             requests: { cpu: 50m, memory: 128Mi }
+#             limits: { cpu: 500m, memory: 384Mi }
+#           readinessProbe:
+#             httpGet: { path: /robots.txt, port: 3000 }
+#             initialDelaySeconds: 5
+#             periodSeconds: 5
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: web
+# spec:
+#   type: NodePort
+#   selector: { app: web }
+#   ports:
+#     - { port: 3000, targetPort: 3000 }
+# ---
+# # ---- 4) ADMIN pod (React + nginx, forwards /api to backend)   open with NodePort: kubectl get svc admin
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: admin
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels: { app: admin }
+#   template:
+#     metadata:
+#       labels: { app: admin }
+#       annotations:
+#         linkerd.io/inject: enabled
+#     spec:
+#       containers:
+#         - name: admin
+#           image: yahia14/blog-platform-admin:1.0.0
+#           imagePullPolicy: Always
+#           ports:
+#             - containerPort: 80
+#           resources:
+#             requests: { cpu: 20m, memory: 32Mi }
+#             limits: { cpu: 200m, memory: 128Mi }
+#           readinessProbe:
+#             httpGet: { path: /, port: 80 }
+#             periodSeconds: 5
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: admin
+# spec:
+#   type: NodePort
+#   selector: { app: admin }
+#   ports:
+#     - { port: 80, targetPort: 80 }
 
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Secret
 metadata:
-  name: mysql-data
+  name: blog-secrets
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: "Root_ChangeMe_2026"
+  MYSQL_PASSWORD: "Db_ChangeMe_2026"
+  JWT_SECRET: "change-this-to-a-long-random-string-32chars-min"
+  ADMIN_EMAIL: "admin@example.com"
+  ADMIN_PASSWORD: "Admin_ChangeMe_2026"
+---
+# ---- 1) MARIADB OPERATOR CLUSTER (3 Replicas - Synchronized Galera Cluster)
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: mysql                   # Retained as 'mysql' to match DB_HOST in backend
 spec:
-  accessModes: ["ReadWriteOnce"]
+  rootPasswordSecretKeyRef:
+    name: blog-secrets
+    key: MYSQL_ROOT_PASSWORD
+  database: blog
+  username: blog_user
+  passwordSecretKeyRef:
+    name: blog-secrets
+    key: MYSQL_PASSWORD
+  replicas: 3
+  galera:
+    enabled: true
+  storage:
+    size: 5Gi
+  podTemplate:
+    annotations:
+      linkerd.io/inject: enabled
+      config.linkerd.io/opaque-ports: "3306,4567,4568,4444" # MariaDB & Galera cluster ports
   resources:
-    requests:
-      storage: 5Gi
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: "1", memory: 1Gi }
 ---
-# ---- 1) MYSQL pod
-# Logs go to files in /var/log/mysql (separate from the backend logs), like your logging.cnf:
-#   kubectl exec deploy/mysql -- tail -f /var/log/mysql/error.log
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mysql
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate              # never two MySQL pods on the same disk
-  selector:
-    matchLabels: { app: mysql }
-  template:
-    metadata:
-      labels: { app: mysql }
-      annotations:
-        linkerd.io/inject: enabled
-        config.linkerd.io/opaque-ports: "3306"   # MySQL is server-speaks-first: skip HTTP detection (3306 is already a Linkerd default)
-    spec:
-      containers:
-        - name: mysql
-          image: mysql:8.4
-          args:
-            - --skip-log-bin
-            - --log-output=FILE
-            - --log-error=/var/log/mysql/error.log
-            - --log-error-verbosity=2
-            - --slow-query-log=1
-            - --slow-query-log-file=/var/log/mysql/slow.log
-            - --long-query-time=1
-            - --general-log=1
-            - --general-log-file=/var/log/mysql/general.log
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              valueFrom: { secretKeyRef: { name: blog-secrets, key: MYSQL_ROOT_PASSWORD } }
-            - { name: MYSQL_DATABASE, value: blog }
-            - { name: MYSQL_USER, value: blog_user }
-            - name: MYSQL_PASSWORD
-              valueFrom: { secretKeyRef: { name: blog-secrets, key: MYSQL_PASSWORD } }
-          ports:
-            - containerPort: 3306
-          volumeMounts:
-            - { name: data, mountPath: /var/lib/mysql }
-            - { name: logs, mountPath: /var/log/mysql }
-          resources:
-            requests: { cpu: 100m, memory: 256Mi }
-            limits: { cpu: "1", memory: 1Gi }
-          readinessProbe:
-            exec:
-              command: ["bash", "-c", "mysqladmin ping -h127.0.0.1 -uroot -p\"$MYSQL_ROOT_PASSWORD\" --silent"]
-            initialDelaySeconds: 20
-            periodSeconds: 5
-          livenessProbe:
-            tcpSocket: { port: 3306 }
-            initialDelaySeconds: 90
-            periodSeconds: 10
-            failureThreshold: 6
-      volumes:
-        - name: data
-          persistentVolumeClaim: { claimName: mysql-data }
-        - name: logs
-          emptyDir: {}          # database logs (use a PVC here if you want them to survive restarts)
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mysql                   # same name as in docker-compose (DB_HOST: mysql)
-spec:
-  selector: { app: mysql }
-  ports:
-    - { port: 3306, targetPort: 3306 }
----
-# ---- 2) BACKEND pod (Express)   logs: kubectl logs deploy/backend
+# ---- 2) BACKEND pod (Express)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -348,18 +523,10 @@ spec:
             - name: ADMIN_EMAIL
               valueFrom: { secretKeyRef: { name: blog-secrets, key: ADMIN_EMAIL } }
             - name: ADMIN_PASSWORD
-              valueFrom: { secretKeyRef: { name: blog-secrets, key: ADMIN_PASSWORD } } 
+              valueFrom: { secretKeyRef: { name: blog-secrets, key: ADMIN_PASSWORD } }
           resources:
             requests: { cpu: 50m, memory: 96Mi }
             limits: { cpu: 500m, memory: 384Mi }
-          # readinessProbe:
-          #   httpGet: { path: /, port: 4000 }
-          #   initialDelaySeconds: 5
-          #   periodSeconds: 5
-          # livenessProbe:
-          #   httpGet: { path: /, port: 4000 }
-          #   initialDelaySeconds: 30
-          #   periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
@@ -369,9 +536,8 @@ spec:
   selector: { app: backend }
   ports:
     - { port: 4000, targetPort: 4000 }
- 
 ---
-# ---- 3) WEB pod (Next.js, users)   open with NodePort: kubectl get svc web
+# ---- 3) WEB pod (Next.js)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -413,7 +579,7 @@ spec:
   ports:
     - { port: 3000, targetPort: 3000 }
 ---
-# ---- 4) ADMIN pod (React + nginx, forwards /api to backend)   open with NodePort: kubectl get svc admin
+# ---- 4) ADMIN pod (React + Nginx)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -450,4 +616,3 @@ spec:
   selector: { app: admin }
   ports:
     - { port: 80, targetPort: 80 }
-
