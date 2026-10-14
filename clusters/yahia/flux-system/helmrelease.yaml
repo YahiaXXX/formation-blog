@@ -1,0 +1,27 @@
+
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: blog-platform
+  namespace: yahia
+spec:
+  interval: 5m
+  releaseName: blog-platform
+  targetNamespace: yahia
+
+  chart:
+    spec:
+      chart: ./
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 1m
+
+  install:
+    createNamespace: true
+
+  upgrade:
+    remediation:
+      retries: 3

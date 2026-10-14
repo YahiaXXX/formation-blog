@@ -44,7 +44,7 @@ backend:
     requests: { cpu: 50m, memory: 96Mi }
     limits: { cpu: 500m, memory: 384Mi }
   probes:
-    startupProbe:               # the API listens only AFTER the database is reachable: allow up to 5 min
+    startupProbe:               
       httpGet: { path: /health, port: 4000 }
       periodSeconds: 5
       failureThreshold: 60
@@ -95,10 +95,10 @@ admin:
       httpGet: { path: /, port: 80 }
       periodSeconds: 5
 
-# Optional Ingress (needs an ingress controller in the cluster)
+
 ingress:
   enabled: false
-  className: ""                 # e.g. nginx (ask your instructor)
-  webHost: web.example.com      # e.g. web.1.2.3.4.nip.io
-  adminHost: admin.example.com  # e.g. admin.1.2.3.4.nip.io
+  className: ""                 
+  webHost: web.example.com      
+  adminHost: admin.example.com  
   annotations: {}

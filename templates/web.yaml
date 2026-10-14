@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+      annotations:
+        {{- toYaml .Values.web.podAnnotations | nindent 8 }}
+    spec:
+      containers:
+        - name: web
+          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.web.port }}
+          env:
+            - name: API_URL
+              value: "http://backend:{{ .Values.backend.port }}"
+            - name: COOKIE_SECURE
+              value: {{ .Values.web.cookieSecure | quote }}
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          {{- toYaml .Values.web.probes | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  type: {{ .Values.web.service.type }}
+  selector:
+    app: web
+  ports:
+    - port: {{ .Values.web.port }}
+      targetPort: {{ .Values.web.port }}

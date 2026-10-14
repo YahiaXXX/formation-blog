@@ -1,0 +1,23 @@
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: {{ .Values.mariadb.name }}
+spec:
+  rootPasswordSecretKeyRef:
+    name: {{ .Values.secret.name }}
+    key: MYSQL_ROOT_PASSWORD
+  database: {{ .Values.mariadb.database }}
+  username: {{ .Values.mariadb.username }}
+  passwordSecretKeyRef:
+    name: {{ .Values.secret.name }}
+    key: MYSQL_PASSWORD
+  replicas: {{ .Values.mariadb.replicas }}
+  galera:
+    enabled: {{ .Values.mariadb.galera }}
+  storage:
+    size: {{ .Values.mariadb.storage }}
+  podMetadata:
+    annotations:
+      {{- toYaml .Values.mariadb.podAnnotations | nindent 6 }}
+  resources:
+    {{- toYaml .Values.mariadb.resources | nindent 4 }}
