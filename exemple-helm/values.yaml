@@ -1,0 +1,99 @@
+# =====================================================================
+# Default values of the blog-platform chart. Override with  -f my-values.yaml  or  --set key=value
+# =====================================================================
+
+secret:
+  create: true                  # false = use a Secret you created yourself (kubectl create secret ...)
+  name: blog-secrets            # name of the Secret used by every component
+  data:                         # only used when create: true  (CHANGE THESE)
+    MYSQL_ROOT_PASSWORD: "Root_ChangeMe_2026"
+    MYSQL_PASSWORD: "Db_ChangeMe_2026"
+    JWT_SECRET: "change-this-to-a-long-random-string-32chars-min"
+    ADMIN_EMAIL: "admin@example.com"
+    ADMIN_PASSWORD: "Admin_ChangeMe_2026"
+
+mariadb:
+  name: mysql                   # name of the MariaDB resource -> Services: <name>, <name>-primary, <name>-secondary
+  database: blog
+  username: blog_user
+  replicas: 3
+  galera: true                  # synchronous replication between the 3 pods
+  storage: 5Gi
+  podAnnotations:
+    linkerd.io/inject: enabled
+    config.linkerd.io/opaque-ports: "3306,4567,4568,4444"
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: "1", memory: 1Gi }
+
+backend:
+  image:
+    repository: yahia14/blog-backend
+    tag: "2.0.0"
+    pullPolicy: Always
+  replicas: 1
+  port: 4000
+  podAnnotations:
+    linkerd.io/inject: enabled
+  resources:
+    requests: { cpu: 50m, memory: 96Mi }
+    limits: { cpu: 500m, memory: 384Mi }
+  probes:
+    startupProbe:               # the API listens only AFTER the database is reachable: allow up to 5 min
+      httpGet: { path: /health, port: 4000 }
+      periodSeconds: 5
+      failureThreshold: 60
+    readinessProbe:
+      httpGet: { path: /ready, port: 4000 }
+      periodSeconds: 5
+    livenessProbe:
+      httpGet: { path: /health, port: 4000 }
+      periodSeconds: 10
+
+web:
+  image:
+    repository: yahia14/blog-platform-web
+    tag: "1.0.0"
+    pullPolicy: Always
+  replicas: 1
+  port: 3000
+  cookieSecure: "false"         # "true" only behind HTTPS
+  service:
+    type: NodePort
+  podAnnotations:
+    linkerd.io/inject: enabled
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 384Mi }
+  probes:
+    readinessProbe:
+      httpGet: { path: /robots.txt, port: 3000 }
+      initialDelaySeconds: 5
+      periodSeconds: 5
+
+admin:
+  image:
+    repository: yahia14/blog-platform-admin
+    tag: "1.0.0"
+    pullPolicy: Always
+  replicas: 1
+  port: 80
+  service:
+    type: NodePort
+  podAnnotations:
+    linkerd.io/inject: enabled
+  resources:
+    requests: { cpu: 20m, memory: 32Mi }
+    limits: { cpu: 200m, memory: 128Mi }
+  probes:
+    readinessProbe:
+      httpGet: { path: /, port: 80 }
+      periodSeconds: 5
+
+# Optional Ingress (needs an ingress controller in the cluster)
+ingress:
+  enabled: false
+  className: ""                 # e.g. nginx (ask your instructor)
+  webHost: web.example.com      # e.g. web.1.2.3.4.nip.io
+  adminHost: admin.example.com  # e.g. admin.1.2.3.4.nip.io
+  annotations: {}

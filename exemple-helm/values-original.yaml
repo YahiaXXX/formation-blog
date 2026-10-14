@@ -1,0 +1,8 @@
+# Reproduces blog-platform-simple2.yaml exactly (no startupProbe, original probe delays).
+backend:
+  probes:
+    startupProbe: null          # null removes the default key
+    readinessProbe:
+      initialDelaySeconds: 10
+    livenessProbe:
+      initialDelaySeconds: 30

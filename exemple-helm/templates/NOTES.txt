@@ -1,0 +1,8 @@
+Release {{ .Release.Name }} deployed in namespace {{ .Release.Namespace }}.
+
+Watch the pods:        kubectl get pods -n {{ .Release.Namespace }} -w
+MariaDB cluster:       kubectl get mariadb -n {{ .Release.Namespace }}
+Find the NodePorts:    kubectl get svc web admin -n {{ .Release.Namespace }}
+{{- if .Values.ingress.enabled }}
+Ingress:               http://{{ .Values.ingress.webHost }}   and   http://{{ .Values.ingress.adminHost }}
+{{- end }}
