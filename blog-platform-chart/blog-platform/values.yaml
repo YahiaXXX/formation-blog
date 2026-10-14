@@ -2,15 +2,15 @@
 # Default values of the blog-platform chart. Override with  -f my-values.yaml  or  --set key=value
 # =====================================================================
 
-secret:
-  create: true                  # false = use a Secret you created yourself (kubectl create secret ...)
-  name: blog-secrets            # name of the Secret used by every component
-  data:                         # only used when create: true  (CHANGE THESE)
-    MYSQL_ROOT_PASSWORD: "Root_ChangeMe_2026"
-    MYSQL_PASSWORD: "Db_ChangeMe_2026"
-    JWT_SECRET: "change-this-to-a-long-random-string-32chars-min"
-    ADMIN_EMAIL: "admin@example.com"
-    ADMIN_PASSWORD: "Admin_ChangeMe_2026"
+# secret:
+#   create: true                  # false = use a Secret you created yourself (kubectl create secret ...)
+#   name: blog-secrets            # name of the Secret used by every component
+#   data:                         # only used when create: true  (CHANGE THESE)
+#     MYSQL_ROOT_PASSWORD: "Root_ChangeMe_2026"
+#     MYSQL_PASSWORD: "Db_ChangeMe_2026"
+#     JWT_SECRET: "change-this-to-a-long-random-string-32chars-min"
+#     ADMIN_EMAIL: "admin@example.com"
+#     ADMIN_PASSWORD: "Admin_ChangeMe_2026"
 
 mariadb:
   name: mysql                   # name of the MariaDB resource -> Services: <name>, <name>-primary, <name>-secondary

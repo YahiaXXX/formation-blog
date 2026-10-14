@@ -2,5 +2,5 @@ apiVersion: v2
 name: blog-platform
 description: Blog platform - MariaDB Galera cluster (mariadb-operator) + Express backend + Next.js web + React admin
 type: application
-version: 0.1.0          # version of the CHART (bump it when you change templates)
-appVersion: "1.0.0"     # version of the APPLICATION
+version: 0.1.0          
+appVersion: "1.0.0"     
