@@ -12,6 +12,11 @@
 #     ADMIN_EMAIL: "admin@example.com"
 #     ADMIN_PASSWORD: "Admin_ChangeMe_2026"
 
+
+secret:
+  create: false
+  name: blog-secrets
+
 mariadb:
   name: mysql                   # name of the MariaDB resource -> Services: <name>, <name>-primary, <name>-secondary
   database: blog
