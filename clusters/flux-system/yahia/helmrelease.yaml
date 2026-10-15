@@ -15,8 +15,8 @@ spec:
       reconcileStrategy: Revision
       sourceRef:
         kind: GitRepository
-        name: flux-system
-        namespace: flux-system
+        name: yahia
+        namespace: yahia
       interval: 1m
 
   install:
