@@ -5,7 +5,7 @@ metadata:
   name: redis
   namespace: yahia
 spec:
-  replicas: 6
+  replicas: 7
   selector:
     matchLabels:
       app: redis
